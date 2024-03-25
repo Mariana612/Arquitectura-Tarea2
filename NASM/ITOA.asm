@@ -4,16 +4,17 @@ global _start
 
 section .data
 	text1 db "Ingrese un numero", 0xA ;len 18
-	n          dq 80  ; Número a convertir
 	digitos db '0123456789ABCDEF'     ; Caracteres que representan los dígitos en base 16
 	errorCode db "Error: Ingrese un numero valido", 0xA;
+	sumNum dq 0
+	counterSumNum dq 2
 
 section .bss
-	num1 resb 101
-	num2 resb 101
-	num3 resb 101
+	num1 resq 13
+	num2 resq 13
+	num3 resq 13
 
-	buffer     resb 100   ; Buffer para almacenar la cadena de caracteres convertida
+	buffer     resb 101   ; Buffer para almacenar la cadena de caracteres convertida
 	base resq 8;
 
 section .text
@@ -23,7 +24,7 @@ _start:
 	call _getText		;Consigue el texto del usuario
 
 
-	mov [num2], rax		;carga el primer numero en num2
+	mov qword [num2], rax		;carga el primer numero en num2
 	xor rax, rax		;reinicia rax
 	mov byte[num1], 0	;reinicia num1
 	
@@ -31,15 +32,30 @@ _start:
 	call _getText		;Consigue el texto del usuario
 
 		
-	mov [num3], rax		;carga el primer numero en num3
+	mov qword [num3], rax		;carga el primer numero en num3
 
-	;--------------------------------------------------------CODIGO NUEVO
+	;------------------INICIO ITOA------------------------
 
-    	mov qword [base], 10
+	mov rax, [num2]
+    	add rax, [num3]   ; Hace la suma
+	mov [sumNum], rax
+	call _startSumLoop
+	;call _startItoa
+	call _finishCode
+
+_startSumLoop:
+	cmp qword [counterSumNum],17
+	je _exitFunction
+	call _startItoa
+	inc qword [counterSumNum]
+	jmp _startSumLoop
+	
+
+_startItoa:
     	; Llama a ITOA para convertir n a cadena
     	mov rdi, buffer
-    	mov rsi, [num2]
-    	mov rbx, [base]; Establece la base (Se puede cambiar)
+    	mov rsi, [sumNum]
+    	mov rbx, [counterSumNum]; Establece la base (Se puede cambiar)
     	call itoa
     	mov r8, rax  ; Almacena la longitud de la cadena
     
@@ -57,8 +73,9 @@ _start:
     	mov rax, 1
     	syscall
     	
-	call _finishCode
+	ret
 
+;------------------OBTENER TEXTO------------------------
 _printText1:			;texto inicial
 	mov rax, 1
 	mov rdi, 1
@@ -76,6 +93,7 @@ _getText:			;obtiene el texto
 	call _inputCheck	;se asegura de que se ingrese unicamente numeros
 	call _AtoiStart
 
+;------------------ATOI------------------------
 _AtoiStart:
 	xor rbx, rbx		;reinicia el registro
 	xor rax, rax		;reinicia el registro
@@ -99,6 +117,7 @@ _Atoi:
 _exitFunction: 
 	ret
 
+;------------------CHEQUEO DE ERRORES------------------------
 _inputCheck:
 				
 	mov rsi, num1		; direccion del buffer de ingreso
@@ -166,6 +185,8 @@ itoa:
     
     	mov rax, rsi  ; Devuelve la longitud de la cadena
     	ret
+
+;-------------------- Finalizacion de codigo 
 
 _finishError:			;finaliza codigo
 	mov rax, 1
