@@ -1,3 +1,5 @@
+; Creditos a Russ Ross por la base de la implementacion de ITOA. Link al video: https://www.youtube.com/watch?v=D7gabV6tWCE
+
 global _start
 
 section .data
