@@ -8,6 +8,10 @@ section .data
 	errorCode db "Error: Ingrese un numero valido", 0xA;
 	processNum dq 0
 	counterSumNum dq 2
+	flag1 db 0
+	negSign db "-" ;len 2
+	sumPrint db "Print de sumas:", 0xA ;len 15
+	restPrint db "Print de restas:", 0xA ;len 15
 
 section .bss
 	num1 resq 13
@@ -36,27 +40,51 @@ _start:
 
 	;------------------INICIO ITOA------------------------
 
+	call _printSum
+
 	mov rax, [num2]
     	add rax, [num3]   ; Hace la suma
 	mov [processNum], rax
 	call _processLoop
 
+	call _printRest
+
 	mov qword [counterSumNum],2
 
 	mov rax, [num2]
     	sub rax, [num3]
+	call _testNeg
+
 	mov [processNum], rax
 	call _processLoop
 
 	call _finishCode
 
+_testNeg:
+	test rax, rax		;realiza test a ver si el numero es negativo
+    	jns _exitFunction  	;si no es negativo salta a string directamente
+	neg rax			;vuelve positivo el numero
+	mov byte[flag1], 1
+	ret
+	
 _processLoop:
 	cmp qword [counterSumNum],17
 	je _exitFunction
+	cmp byte[flag1], 1	;se asegura de que el primer numero sea o no negativo
+	je _printNeg		;realiza print del simbolo negativo
+
+_continueLoop:
 	call _startItoa
 	inc qword [counterSumNum]
 	jmp _processLoop
 	
+_printNeg:
+	mov rax, 1
+	mov rdi, 1
+	mov rsi, negSign
+	mov rdx, 1 ; 
+	syscall
+	jmp _continueLoop
 
 _startItoa:
     	; Llama a ITOA para convertir n a cadena
@@ -99,6 +127,7 @@ _getText:			;obtiene el texto
 	syscall 
 	call _inputCheck	;se asegura de que se ingrese unicamente numeros
 	call _AtoiStart
+
 
 ;------------------ATOI------------------------
 _AtoiStart:
@@ -195,6 +224,22 @@ itoa:
 
 ;-------------------- Finalizacion de codigo 
 
+_printSum:
+	mov rax, 1
+	mov rdi, 1
+	mov rsi, sumPrint
+	mov rdx, 16 ; 
+	syscall
+	ret
+
+_printRest:
+	mov rax, 1
+	mov rdi, 1
+	mov rsi, restPrint
+	mov rdx, 17 ; 
+	syscall
+	ret
+
 _finishError:			;finaliza codigo
 	mov rax, 1
 	mov rdi, 1
@@ -206,4 +251,5 @@ _finishCode:			;finaliza codigo
 	mov rax, 60
 	mov rdi, 0
 	syscall
+
 
