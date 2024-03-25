@@ -4,6 +4,7 @@ global _start
 
 section .data
 	text1 db "Ingrese un numero", 0xA ;len 18
+	prompt db "Que desea realizar? 1. suma 2. resta 3. division 4. multiplicacion",0xA ;len 67
 	digitos db '0123456789ABCDEF'     ; Caracteres que representan los dígitos en base 16
 	errorCode db "Error: Ingrese un numero valido", 0xA;
 	processNum dq 0
@@ -12,21 +13,25 @@ section .data
 	negSign db "-" ;len 2
 	sumPrint db "Print de sumas:", 0xA ;len 15
 	restPrint db "Print de restas:", 0xA ;len 15
+	option: times 34 db 0
+
 
 section .bss
 	num1 resq 13
 	num2 resq 13
 	num3 resq 13
-
+	
 	buffer     resb 101   ; Buffer para almacenar la cadena de caracteres convertida
 	base resq 8;
 
 section .text
 
 _start:
+	call _printOptions
+	
+
 	call _printText1	;Hace print inicial
 	call _getText		;Consigue el texto del usuario
-
 
 	mov qword [num2], rax		;carga el primer numero en num2
 	xor rax, rax		;reinicia rax
@@ -37,29 +42,48 @@ _start:
 
 		
 	mov qword [num3], rax		;carga el primer numero en num3
+	movzx eax, byte[option]	;Comapre imputs
 
-	;------------------INICIO ITOA------------------------
+	cmp eax, '1'
+	je _opSuma
 
+	cmp eax, '2'
+	je _opResta
+
+	;cmp eax, '3'
+	;je _opDiv
+
+	;cmp eax, '4'
+	;je _opMult
+	
+
+;------------------ OPCIONES ------------------------
+_opSuma:
 	call _printSum
 
 	mov rax, [num2]
     	add rax, [num3]   ; Hace la suma
 	mov [processNum], rax
 	call _processLoop
+	call _finishCode	
+	;ret
+
+_opResta:
 
 	call _printRest
-
 	mov qword [counterSumNum],2
-
 	mov rax, [num2]
     	sub rax, [num3]
 	call _testNeg
-
 	mov [processNum], rax
 	call _processLoop
-
 	call _finishCode
+	;ret
 
+;_opDiv:
+
+;_opMult:
+;-----------------FIN OPCIONES------------------------
 _testNeg:
 	test rax, rax		;realiza test a ver si el numero es negativo
     	jns _exitFunction  	;si no es negativo salta a string directamente
@@ -111,6 +135,22 @@ _startItoa:
 	ret
 
 ;------------------OBTENER TEXTO------------------------
+_printOptions:
+	mov edx, 67
+	mov ecx, prompt
+	mov ebx, 1 
+	mov eax, 4
+	int 0x80
+
+_getOptions:
+	;lee el imput del user
+	mov edx, 34
+	mov ecx,option
+	mov ebx, 0 ; 0 por que es stdin
+	mov eax, 3; System read
+	int 0x80
+	ret
+
 _printText1:			;texto inicial
 	mov rax, 1
 	mov rdi, 1
@@ -127,7 +167,7 @@ _getText:			;obtiene el texto
 	syscall 
 	call _inputCheck	;se asegura de que se ingrese unicamente numeros
 	call _AtoiStart
-
+;---------------FIN OBTENER TEXTO------------------------
 
 ;------------------ATOI------------------------
 _AtoiStart:
@@ -222,7 +262,7 @@ itoa:
     	mov rax, rsi  ; Devuelve la longitud de la cadena
     	ret
 
-;-------------------- Finalizacion de codigo 
+;-------------------- PRINTS --------------------
 
 _printSum:
 	mov rax, 1
@@ -239,6 +279,8 @@ _printRest:
 	mov rdx, 17 ; 
 	syscall
 	ret
+
+;-------------------- Finalizacion de codigo --------------------
 
 _finishError:			;finaliza codigo
 	mov rax, 1
