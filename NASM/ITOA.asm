@@ -6,7 +6,7 @@ section .data
 	text1 db "Ingrese un numero", 0xA ;len 18
 	digitos db '0123456789ABCDEF'     ; Caracteres que representan los dígitos en base 16
 	errorCode db "Error: Ingrese un numero valido", 0xA;
-	sumNum dq 0
+	processNum dq 0
 	counterSumNum dq 2
 
 section .bss
@@ -38,23 +38,30 @@ _start:
 
 	mov rax, [num2]
     	add rax, [num3]   ; Hace la suma
-	mov [sumNum], rax
-	call _startSumLoop
-	;call _startItoa
+	mov [processNum], rax
+	call _processLoop
+
+	mov qword [counterSumNum],2
+
+	mov rax, [num2]
+    	sub rax, [num3]
+	mov [processNum], rax
+	call _processLoop
+
 	call _finishCode
 
-_startSumLoop:
+_processLoop:
 	cmp qword [counterSumNum],17
 	je _exitFunction
 	call _startItoa
 	inc qword [counterSumNum]
-	jmp _startSumLoop
+	jmp _processLoop
 	
 
 _startItoa:
     	; Llama a ITOA para convertir n a cadena
     	mov rdi, buffer
-    	mov rsi, [sumNum]
+    	mov rsi, [processNum]
     	mov rbx, [counterSumNum]; Establece la base (Se puede cambiar)
     	call itoa
     	mov r8, rax  ; Almacena la longitud de la cadena
