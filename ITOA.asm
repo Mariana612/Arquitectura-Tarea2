@@ -5,7 +5,8 @@ sys_write  equ 1
 sys_exit   equ 60
 stdout     equ 1
 newline    equ 10
-n          dq 2   ; Número a convertir
+n          dq 80  ; Número a convertir
+base       dq 10  ; Base de n
 digitos db '0123456789ABCDEF'     ; Caracteres que representan los dígitos en base 16
 
 section .bss
@@ -64,7 +65,7 @@ _start:
     ; Llama a ITOA para convertir n a cadena
     mov rdi, buffer
     mov rsi, [n]
-    mov rbx, 2  ; Establece la base (Se puede cambiar)
+    mov rbx, [base]; Establece la base (Se puede cambiar)
     call itoa
     mov r8, rax  ; Almacena la longitud de la cadena
     
