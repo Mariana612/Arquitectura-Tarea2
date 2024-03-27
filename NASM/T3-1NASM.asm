@@ -13,6 +13,7 @@ section .data
 	negSign db "-" ;len 2
 	sumPrint db "Print de sumas:", 0xA ;len 15
 	restPrint db "Print de restas:", 0xA ;len 15
+	overflowMsg db "ERROR: Overflow", 0xA
 
 section .bss
 	num1 resq 13
@@ -48,8 +49,11 @@ _start:
 	call _printSum
 	mov rax, [num2]
     	add rax, [num3]   ; Hace la suma
+	jc _overflowDetected
 	mov [processNum], rax
 	call _processLoop
+
+	_continueProcess
 
 	;#RESTA
 	call _printRest
@@ -70,6 +74,15 @@ _start:
 
 ;-------------- FIN MAIN ------------------------
 
+_overflowDetected:
+	mov rax, 1
+	mov rdi, 1
+	mov rsi, overflowMsg
+	mov rdx, 16
+	syscall
+	jmp _continueProcess
+
+
 _compare: 
 	cmp byte [flagSpCase], 1
 	je _testNegSpecialCase
@@ -82,7 +95,7 @@ _testNegSpecialCase:
 	js _exitFunction
 	
 _testNeg:
-	test rax, rax		;realiza test a ver si el numero es negativo ;18446744073709551614
+	test rax, rax		;realiza test a ver si el numero es negativo ;18446744073709551615
     	jns _exitFunction  	;si no es negativo salta a string directamente ;8446744073709551614
 
 _makeNeg:
