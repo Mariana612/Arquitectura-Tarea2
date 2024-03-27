@@ -17,12 +17,15 @@ section .bss
 	num1 resq 13
 	num2 resq 13
 	num3 resq 13
+	length resb 1
+
 
 	buffer     resb 101   ; Buffer para almacenar la cadena de caracteres convertida
 	base resq 8;
 
 section .text
 
+;------------------ MAIN ------------------------
 _start:
 	call _printText1	;Hace print inicial
 	call _getText		;Consigue el texto del usuario
@@ -40,96 +43,44 @@ _start:
 
 	;------------------INICIO ITOA------------------------
 
+	;#SUMA
 	call _printSum
-
 	mov rax, [num2]
     	add rax, [num3]   ; Hace la suma
 	mov [processNum], rax
 	call _processLoop
 
+	;#RESTA
 	call _printRest
-
 	mov qword [counterSumNum],2
-
 	mov rax, [num2]
     	sub rax, [num3]
 	call _testNeg
 
 	mov [processNum], rax
 	call _processLoop
+	;------------------FIN ITOA---------------------------
 
 	call _finishCode
 
+;-------------- FIN MAIN ------------------------
+
+
+_testNegSpecialCase:
+	test rax, rax		;realiza test a ver si el numero es negativo ;18446744073709551614
+    	jns _makeNeg
+	js _exitFunction
+	
 _testNeg:
-	test rax, rax		;realiza test a ver si el numero es negativo
-    	jns _exitFunction  	;si no es negativo salta a string directamente
+	test rax, rax		;realiza test a ver si el numero es negativo ;18446744073709551614
+    	jns _exitFunction  	;si no es negativo salta a string directamente ;8446744073709551614
+
+_makeNeg:
 	neg rax			;vuelve positivo el numero
 	mov byte[flag1], 1
 	ret
-	
-_processLoop:
-	cmp qword [counterSumNum],17
-	je _exitFunction
-	cmp byte[flag1], 1	;se asegura de que el primer numero sea o no negativo
-	je _printNeg		;realiza print del simbolo negativo
 
-_continueLoop:
-	call _startItoa
-	inc qword [counterSumNum]
-	jmp _processLoop
-	
-_printNeg:
-	mov rax, 1
-	mov rdi, 1
-	mov rsi, negSign
-	mov rdx, 1 ; 
-	syscall
-	jmp _continueLoop
-
-_startItoa:
-    	; Llama a ITOA para convertir n a cadena
-    	mov rdi, buffer
-    	mov rsi, [processNum]
-    	mov rbx, [counterSumNum]; Establece la base (Se puede cambiar)
-    	call itoa
-    	mov r8, rax  ; Almacena la longitud de la cadena
-    
-    	; Añade un salto de línea
-    	mov byte [buffer + r8], 10
-    	inc r8
-    
-    	; Termina la cadena con null
-   	 mov byte [buffer + r8], 0
-    
-   	; Escribe en stdout
-   	mov rdi, 1
-    	mov rsi, buffer
-    	mov rdx, r8
-    	mov rax, 1
-    	syscall
-    	
-	ret
-
-;------------------OBTENER TEXTO------------------------
-_printText1:			;texto inicial
-	mov rax, 1
-	mov rdi, 1
-	mov rsi, text1
-	mov rdx, 18
-	syscall 
-	ret
-
-_getText:			;obtiene el texto
-	mov rax, 0
-	mov rdi, 0
-	mov rsi, num1
-	mov rdx, 101
-	syscall 
-	call _inputCheck	;se asegura de que se ingrese unicamente numeros
-	call _AtoiStart
-
-
-;------------------ATOI------------------------
+;------------------ATOI---------------------------------------
 _AtoiStart:
 	xor rbx, rbx		;reinicia el registro
 	xor rax, rax		;reinicia el registro
@@ -152,14 +103,18 @@ _Atoi:
 
 _exitFunction: 
 	ret
+;----------------- END ATOI ---------------------------------
 
-;------------------CHEQUEO DE ERRORES------------------------
-_inputCheck:
+;----------------- CHEQUEO DE ERRORES -----------------------
+
+;#chequea que el caracter ingresado sea un int
+_inputCheck:  			
 				
 	mov rsi, num1		; direccion del buffer de ingreso
     	xor rcx, rcx		; Clear counter
 
 	check_input:
+
 		movzx rax, byte [rsi + rcx]		;Carga el byte actual
         	cmp rax, 0xA
         	je input_valid				;Final del string alcanzado
@@ -173,7 +128,57 @@ _inputCheck:
 	input_valid:
 		ret
 
-;--------------------------------------------------------CODIGO NUEVO
+;#CALCULA LA LONGITUD DE UN NUMERO
+
+_countInt:
+	mov byte [length], 0
+divide_loop:
+    
+    test rax, rax
+    jz _exitFunction
+    
+    ; Increment counter
+    inc byte [length]
+    
+    ; Divide rax by 10
+    mov rbx, 10
+    xor rdx, rdx ; Clear rdx for division
+    div rbx
+    
+    ; Repeat the loop
+    jmp divide_loop
+	
+_processLoop:
+	cmp qword [counterSumNum],17
+	je _exitFunction
+	cmp byte[flag1], 1	;se asegura de que el primer numero sea o no negativo
+	je _printNeg		;realiza print del simbolo negativo
+
+_continueLoop:
+	call _startItoa
+	inc qword [counterSumNum]
+	jmp _processLoop
+
+;--------------END CHEQUEO DE ERRORES------------------------
+
+;--------------ITOA -----------------------------------------
+_startItoa:
+    	; Llama a ITOA para convertir n a cadena
+    	mov rdi, buffer
+    	mov rsi, [processNum]
+    	mov rbx, [counterSumNum]; Establece la base (Se puede cambiar)
+    	call itoa
+    	mov r8, rax  ; Almacena la longitud de la cadena
+    
+    	; Añade un salto de línea
+    	mov byte [buffer + r8], 10
+    	inc r8
+    
+    	; Termina la cadena con null
+   	 mov byte [buffer + r8], 0
+
+   	jmp _printItoa
+
 ; Definición de la función ITOA
 itoa:
     	mov rax, rsi    ; Mueve el número a convertir (en rsi) a rax
@@ -222,7 +227,34 @@ itoa:
     	mov rax, rsi  ; Devuelve la longitud de la cadena
     	ret
 
-;-------------------- Finalizacion de codigo 
+;----------------- END ITOA -------------------
+
+;----------------- PRINTS ---------------------
+_printText1:			;texto inicial
+	mov rax, 1
+	mov rdi, 1
+	mov rsi, text1
+	mov rdx, 18
+	syscall 
+	ret
+
+_getText:			;obtiene el texto
+	mov rax, 0
+	mov rdi, 0
+	mov rsi, num1
+	mov rdx, 101
+	syscall 
+	call _inputCheck	;se asegura de que se ingrese unicamente numeros
+	call _AtoiStart
+	ret
+
+_printNeg:
+	mov rax, 1
+	mov rdi, 1
+	mov rsi, negSign
+	mov rdx, 1 
+	syscall
+	jmp _continueLoop
 
 _printSum:
 	mov rax, 1
@@ -239,6 +271,19 @@ _printRest:
 	mov rdx, 17 ; 
 	syscall
 	ret
+
+_printItoa:
+   	; Escribe en stdout
+   	mov rdi, 1
+    	mov rsi, buffer
+    	mov rdx, r8
+    	mov rax, 1
+    	syscall
+    	
+	ret
+
+;---------------- END PRINTS --------------------
+;-------------------- Finalizacion de codigo 
 
 _finishError:			;finaliza codigo
 	mov rax, 1
