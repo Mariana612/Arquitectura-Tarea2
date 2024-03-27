@@ -9,6 +9,7 @@ section .data
 	processNum dq 0
 	counterSumNum dq 2
 	flag1 db 0
+	flagSpCase db 0
 	negSign db "-" ;len 2
 	sumPrint db "Print de sumas:", 0xA ;len 15
 	restPrint db "Print de restas:", 0xA ;len 15
@@ -53,9 +54,13 @@ _start:
 	;#RESTA
 	call _printRest
 	mov qword [counterSumNum],2
+
+	call _specialCaseSub
+
 	mov rax, [num2]
     	sub rax, [num3]
-	call _testNeg
+	call _compare
+	
 
 	mov [processNum], rax
 	call _processLoop
@@ -65,8 +70,13 @@ _start:
 
 ;-------------- FIN MAIN ------------------------
 
+_compare: 
+	cmp byte [flagSpCase], 1
+	je _testNegSpecialCase
+	js _testNeg
 
 _testNegSpecialCase:
+	;call _finishError
 	test rax, rax		;realiza test a ver si el numero es negativo ;18446744073709551614
     	jns _makeNeg
 	js _exitFunction
@@ -127,6 +137,39 @@ _inputCheck:
 
 	input_valid:
 		ret
+
+;---#SPECIAL CASE
+_specialCaseSub: 
+
+	mov rax, [num2]
+	call _countInt
+	;---------------
+
+	cmp byte [length], 20
+	je _num20
+	
+	mov rax, [num3]
+	call _countInt
+
+	cmp byte [length], 20
+	jne _exitFunction
+	mov byte [flagSpCase], 1
+	ret
+
+	;CALL _finishError
+
+	
+	_num20:
+		mov rax, [num3]
+		call _countInt
+
+		cmp byte [length], 20
+		je _exitFunction
+		mov byte [flagSpCase], 1
+		;CALL _printText1
+		ret
+		
+
 
 ;#CALCULA LA LONGITUD DE UN NUMERO
 
