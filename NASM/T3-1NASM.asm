@@ -130,7 +130,7 @@ _exitFunction:
 
 ;----------------- CHEQUEO DE ERRORES -----------------------
 
-;#chequea que el caracter ingresado sea un int
+;---#chequea que el caracter ingresado sea un int
 _inputCheck:  			
 				
 	mov rsi, num1		; direccion del buffer de ingreso
@@ -184,7 +184,7 @@ _specialCaseSub:
 		
 
 
-;#CALCULA LA LONGITUD DE UN NUMERO
+;---#CALCULA LA LONGITUD DE UN NUMERO
 
 _countInt:
 	mov byte [length], 0
@@ -203,7 +203,79 @@ divide_loop:
     
     ; Repeat the loop
     jmp divide_loop
-	
+
+;---#CALCULA LA LONGITUD DE UN STRING	
+_lengthCheck:
+    xor rax, rax                  ; Clear rax register
+    mov rdi, num1               ; Load address of the string into rdi
+    
+length_loop:
+    cmp byte [rdi + rax], 0      ; Compare the byte at the current position with null terminator
+    je length_done                 ; If null terminator is found, jump to count_done
+    inc rax                       ; Increment the counter
+    jmp length_loop                ; Continue looping
+
+length_done:
+	cmp rax, 22
+	je _finishError
+	ret
+
+;---#CALCULA SI EL NUMERO ES MENOR O IGUAL A 18446744073709551615
+_startNumCheck:
+    mov rsi, num1                   ; Address of num1
+    mov rdi, compare_num            ; Address of compare_num
+    
+compare_loop:
+    ; Load current characters from both strings
+    mov al, byte [rsi]              ; Load character from num1
+    mov bl, byte [rdi]              ; Load character from compare_num
+    
+    ; Compare characters
+    cmp al, bl                      ; Compare characters
+    jg num1_greater                 ; If num1's current digit is greater, jump
+    jl num1_less                    ; If num1's current digit is less, jump
+    ; If characters are equal, continue comparing next digits
+    ; If end of strings reached simultaneously, they are equal
+    
+    ; Move to next digits
+    inc rsi                         ; Move to next character of num1
+    inc rdi                         ; Move to next character of compare_num
+    
+    ; Check for end of strings
+    cmp byte [rsi], 0               ; Check if end of num1
+    je end_of_strings               ; If end of num1, exit loop
+    cmp byte [rdi], 0               ; Check if end of compare_num
+    je end_of_strings               ; If end of compare_num, exit loop
+    
+    ; Continue loop
+    jmp compare_loop
+
+num1_greater:
+    ; Code if num1 is greater than compare_num goes here
+    ; For example:
+    ; mov rsi, num1_message          ; Address of message
+    ; call print_string              ; Function to print the message
+    jmp exit_program                ; Exit the program
+
+num1_less:
+    ; Code if num1 is less than compare_num goes here
+    ; For example:
+    ; mov rsi, compare_num_message   ; Address of message
+    ; call print_string              ; Function to print the message
+    jmp exit_program                ; Exit the program
+
+end_of_strings:
+    ; If both strings end simultaneously, they are equal
+    ; Code for handling equality goes here
+    ; For example:
+    ; mov rsi, equal_message         ; Address of message
+    ; call print_string              ; Function to print the message
+
+;--------------END CHEQUEO DE ERRORES------------------------
+
+;--------------ITOA -----------------------------------------
+
+;---#LOOP PARA REALIZAR ITOA
 _processLoop:
 	cmp qword [counterSumNum],17
 	je _exitFunction
@@ -215,9 +287,7 @@ _continueLoop:
 	inc qword [counterSumNum]
 	jmp _processLoop
 
-;--------------END CHEQUEO DE ERRORES------------------------
-
-;--------------ITOA -----------------------------------------
+;---#ITOA INICIO
 _startItoa:
     	; Llama a ITOA para convertir n a cadena
     	mov rdi, buffer
@@ -301,6 +371,7 @@ _getText:			;obtiene el texto
 	mov rdx, 101
 	syscall 
 	call _inputCheck	;se asegura de que se ingrese unicamente numeros
+	call _lengthCheck
 	call _AtoiStart
 	ret
 
