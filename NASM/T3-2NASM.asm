@@ -13,6 +13,9 @@ section .data
 	negSign db "-" ;len 2
 	sumPrint db "Print de sumas:", 0xA ;len 15
 	restPrint db "Print de restas:", 0xA ;len 15
+	multPrint db "Print de multiplicaciones:", 0xA; len 26
+	texto db 25,0, 26 dup('$')
+	longitud db 0,0,'$'
 	option: times 34 db 0
 
 
@@ -82,8 +85,30 @@ _opResta:
 
 ;_opDiv:
 
-;_opMult:
+
+
+_opMult:
+	call _printMult
+	mov rax, [num2]
+	mul rax, [num3]
+	mov [processNum], rax
+	call _processLoop
+	call _finishCode
+	;ret
+
 ;-----------------FIN OPCIONES------------------------
+
+_contarCadena:
+	MOV AH, 0AH		 ;Lectura de la cadena
+	LEA DX, texto
+	int 21h
+	mov ax,0
+	mov al, texto[1]
+	aam			;Divide en decenas y unidades
+	ADD AX,3030H 		;Conversion a ASCII
+	mov longitud[0], AH     ;Decenas
+	mov longitud[1], AL     ;Unidades
+
 _testNeg:
 	test rax, rax		;realiza test a ver si el numero es negativo
     	jns _exitFunction  	;si no es negativo salta a string directamente
@@ -277,6 +302,14 @@ _printRest:
 	mov rdi, 1
 	mov rsi, restPrint
 	mov rdx, 17 ; 
+	syscall
+	ret
+
+_printMult:
+	mov rax, 1
+	mov rdi, 1
+	mov rsi, multPrint
+	mov rdx, 26;
 	syscall
 	ret
 
