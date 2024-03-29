@@ -18,10 +18,12 @@ section .data
 	compare_numTest dq "857565"
 
 section .bss
+	textPrint resb 200
 	num1 resq 13
 	num2 resq 13
 	num3 resq 13
 	length resb 1
+	strLen resb 1
 
 
 	buffer     resb 101   ; Buffer para almacenar la cadena de caracteres convertida
@@ -31,7 +33,8 @@ section .text
 
 ;------------------ MAIN ------------------------
 _start:
-	call _printText1		;Hace print inicial
+	;call _printText1		;Hace print inicial
+	call _GenericPrint
 	call _getText			;Consigue el texto del usuario
 
 
@@ -200,11 +203,14 @@ divide_loop:
 _lengthCheck:
     	xor rax, rax                  			;Clear registro de rax
     	mov rdi, num1               			;carga la direccion de memoria de num1 en rdi
+	mov byte [strLen], 0
     
 length_loop:
+	
     	cmp byte [rdi + rax], 0      			;observa si tiene terminacion nula
     	je length_done                 
     	inc rax                       			;Incrementa contador
+	inc byte [strLen]
     	jmp length_loop                			;loop
 
 length_done:
@@ -326,6 +332,20 @@ itoa:
 ;----------------- END ITOA -------------------
 
 ;----------------- PRINTS ---------------------
+_GenericPrint:
+	lea rbx, [text1]
+	mov rax, rbx
+	call _lengthCheck
+
+	mov rax, 1
+	mov rdi, 1
+	mov rsi, rbx
+	mov rdx, [strLen] 
+	syscall 
+	ret
+	
+	
+
 _printText1:			;texto inicial
 	mov rax, 1
 	mov rdi, 1
