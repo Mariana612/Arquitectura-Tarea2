@@ -75,55 +75,47 @@ _start:
 
 ;-------------- FIN MAIN ------------------------
 
-_overflowDetected:
-	mov rax, 1
-	mov rdi, 1
-	mov rsi, overflowMsg
-	mov rdx, 16
-	syscall
-	jmp _continueProcess
-
 
 _compare: 
 	cmp byte [flagSpCase], 1
 	je _testNegSpecialCase
 	js _testNeg
 
-_testNegSpecialCase:
-	;call _finishError
-	test rax, rax		;realiza test a ver si el numero es negativo ;18446744073709551614
-    	jns _makeNeg
-	js _exitFunction
+	_testNegSpecialCase:
+		;call _finishError
+		test rax, rax		;realiza test a ver si el numero es negativo
+    		jns _makeNeg
+		js _exitFunction
 	
-_testNeg:
-	test rax, rax		;realiza test a ver si el numero es negativo ;18446744073709551615
-    	jns _exitFunction  	;si no es negativo salta a string directamente ;8446744073709551614
+	_testNeg:
+		test rax, rax		;realiza test a ver si el numero es negativo 
+    		jns _exitFunction  	;si no es negativo salta a string directamente 
 
-_makeNeg:
-	neg rax			;vuelve positivo el numero
-	mov byte[flag1], 1
-	ret
+	_makeNeg:
+		neg rax			;vuelve positivo el numero
+		mov byte[flag1], 1	;indica que el numero es negativo
+		ret
 
 ;------------------ATOI---------------------------------------
 _AtoiStart:
-	xor rbx, rbx		;reinicia el registro
-	xor rax, rax		;reinicia el registro
-	lea rcx, [num1]		;ingresa el numero 1 a rcx
+	xor rbx, rbx			;reinicia el registro
+	xor rax, rax			;reinicia el registro
+	lea rcx, [num1]			;ingresa el num1 a rcx
 	jmp _Atoi
 
 _Atoi:
 	mov bl, byte[rcx]
 	cmp bl, 0xA		
-	je _exitFunction	;se asegura de que sea el final del string
+	je _exitFunction		;se asegura de que sea el final del string
 
-	sub rbx,30h		;resta 30h al string para volverlo el numero
-	imul rax, 10 		;multiplica el numero almacenado en rax x 10 para volverlo decimal
-	add rax, rbx		;agrega el ultimo numero obtenido a rax (ej: 10+3=13)	
+	sub rbx,30h			;resta 30h al string para volverlo el numero
+	imul rax, 10 			;multiplica el numero almacenado en rax x 10 para volverlo decimal
+	add rax, rbx			;agrega el ultimo numero obtenido a rax (ej: 10+3=13)	
 
 
-	xor rbx,rbx		;reinicia el registro
-	inc rcx			;incrementa x 1 el rcx (obtiene el siguiente caracter
-	jmp _Atoi		;realiza loop
+	xor rbx,rbx			;reinicia el registro
+	inc rcx				;incrementa x 1 el rcx (obtiene el siguiente caracter
+	jmp _Atoi			;realiza loop
 
 _exitFunction: 
 	ret
@@ -134,8 +126,8 @@ _exitFunction:
 ;---#chequea que el caracter ingresado sea un int
 _inputCheck:  			
 				
-	mov rsi, num1		; direccion del buffer de ingreso
-    	xor rcx, rcx		; Clear counter
+	mov rsi, num1					;direccion del buffer de ingreso
+    	xor rcx, rcx					;Clear counter
 
 	check_input:
 
@@ -153,37 +145,38 @@ _inputCheck:
 		ret
 
 ;---#SPECIAL CASE
+;handling de errores que causa que la funcion no pueda manejar numeros de 20 de largo, 
+;al contar el primer 1 como un numero negativo
+
 _specialCaseSub: 
 
 	mov rax, [num2]
-	call _countInt
+	call _countInt					;calcula lngitud de numero2
 	;---------------
 
-	cmp byte [length], 20
+	cmp byte [length], 20				;compara que el tamano es 20
 	je _num20
 	
 	mov rax, [num3]
 	call _countInt
 
 	cmp byte [length], 20
-	jne _exitFunction
-	mov byte [flagSpCase], 1
+	jne _exitFunction				;si ambos son menores a 20, no es caso especial
+	mov byte [flagSpCase], 1			;caso especial
 	ret
 
 	;CALL _finishError
 
 	
-	_num20:
+	_num20:						;calcula lngitud de numero3
 		mov rax, [num3]
 		call _countInt
 
 		cmp byte [length], 20
-		je _exitFunction
-		mov byte [flagSpCase], 1
-		;CALL _printText1
+		je _exitFunction			;si ambos son de longitud 20 entonces no es caso especial
+		mov byte [flagSpCase], 1		;es caso especial
 		ret
 		
-
 
 ;---#CALCULA LA LONGITUD DE UN NUMERO
 
@@ -191,78 +184,72 @@ _countInt:
 	mov byte [length], 0
 divide_loop:
     
-    test rax, rax
-    jz _exitFunction
+	test rax, rax
+    	jz _exitFunction
     
-    ; Increment counter
-    inc byte [length]
+    	inc byte [length]				;incrementa contador
     
-    ; Divide rax by 10
-    mov rbx, 10
-    xor rdx, rdx ; Clear rdx for division
-    div rbx
-    
-    ; Repeat the loop
-    jmp divide_loop
+    	mov rbx, 10					;Divide rax por 10
+    	xor rdx, rdx 					;reinicia rdx para la division
+    	div rbx
+   
+    	jmp divide_loop					;loop
 
-;---#CALCULA LA LONGITUD DE UN STRING	
+;---#CALCULA LA LONGITUD DE UN STRING
+	
 _lengthCheck:
-    xor rax, rax                  ; Clear rax register
-    mov rdi, num1               ; Load address of the string into rdi
+    	xor rax, rax                  			;Clear registro de rax
+    	mov rdi, num1               			;carga la direccion de memoria de num1 en rdi
     
 length_loop:
-    cmp byte [rdi + rax], 0      ; Compare the byte at the current position with null terminator
-    je length_done                 ; If null terminator is found, jump to count_done
-    inc rax                       ; Increment the counter
-    jmp length_loop                ; Continue looping
+    	cmp byte [rdi + rax], 0      			;observa si tiene terminacion nula
+    	je length_done                 
+    	inc rax                       			;Incrementa contador
+    	jmp length_loop                			;loop
 
 length_done:
 	cmp rax, 21
-	jg _finishError
+	jg _finishError					;error si es mas largo a 21
 	cmp rax, 21
-	je _startNumCheck
+	je _startNumCheck				;continua
 	ret
 
 ;---#CALCULA SI EL NUMERO ES MENOR O IGUAL A 18446744073709551615
+
 _startNumCheck:
-  ; Initialize pointers to the end of strings
-    mov rsi, num1 + 19		;Point to the last character of num1 (assuming 13 qwords)
-    mov rdi, compare_num +19	;Point to the last character of compare_num (19 characters)
+    	mov rsi, num1 + 19				;Apunta al ultimo caracter del numero ingresado (se asume que siempre son 20 caracteres)
+    	mov rdi, compare_num +19			;Apunta al ultimo caracter del numero a comparar (se asume que siempre son 20 caracteres)
 
 compare_loop:
-    ; Load current characters from both strings
-    movzx rax, byte [rsi]             ; Load character from num1
-    movzx rbx, byte [rdi]             ; Load character from compare_num
+    	movzx rax, byte [rsi]             		;Carga el caracter del num1
+    	movzx rbx, byte [rdi]             		;Carga el caracter del compare_num
     
-    ; Compare characters
-    cmp rax, rbx               ; Compare characters
-    jg _finishError            ; If num1's current digit is greater, jump
-    jl end_of_strings          ; If num1's current digit is less, jump
+    	cmp rax, rbx               			;Compara los caracteres
+    	jg _finishError            			;Si el caracter del num1 es mayor, da error
+    	jl end_of_strings          			;Si el caracter del num1 es mayor, finaliza
     
+    	sub rsi, 1                 			;Se aumenta al caracter que se esta apuntando
+    	sub rdi, 1                 			;Se aumenta al caracter que se esta apuntando
     
-    ; Move to previous digits
-    sub rsi, 1                 ; Move to previous character of num1 (8 bytes for qword)
-    sub rdi, 1                 ; Move to previous character of compare_num (8 bytes for qword)
+    	cmp rsi, -1                			;Chequea si se finalizo de comparar
+    	jl end_of_strings          			;finaliza loop
     
-    ; Check for beginning of strings
-    cmp rsi, -1              ; Check if beginning of num1 reached
-    jl end_of_strings          ; If beginning of num1 reached, exit loop
-    
-    ; Continue loop
-    jmp compare_loop
-    end_of_strings:
-    ret
+    	jmp compare_loop	   			;loop
+
+end_of_strings:
+    	ret
 
 ;--------------END CHEQUEO DE ERRORES------------------------
 
 ;--------------ITOA -----------------------------------------
 
 ;---#LOOP PARA REALIZAR ITOA
+
 _processLoop:
 	cmp qword [counterSumNum],17
 	je _exitFunction
-	cmp byte[flag1], 1	;se asegura de que el primer numero sea o no negativo
-	je _printNeg		;realiza print del simbolo negativo
+	cmp byte[flag1], 1				;se asegura de que el primer numero sea o no negativo
+	je _printNeg					;realiza print del simbolo negativo
 
 _continueLoop:
 	call _startItoa
@@ -270,13 +257,14 @@ _continueLoop:
 	jmp _processLoop
 
 ;---#ITOA INICIO
+
 _startItoa:
-    	; Llama a ITOA para convertir n a cadena
+    	;Llama a ITOA para convertir n a cadena
     	mov rdi, buffer
     	mov rsi, [processNum]
-    	mov rbx, [counterSumNum]; Establece la base (Se puede cambiar)
+    	mov rbx, [counterSumNum]			;Establece la base (Se puede cambiar)
     	call itoa
-    	mov r8, rax  ; Almacena la longitud de la cadena
+    	mov r8, rax  					;Almacena la longitud de la cadena
     
     	; Añade un salto de línea
     	mov byte [buffer + r8], 10
@@ -289,13 +277,13 @@ _startItoa:
 
 ; Definición de la función ITOA
 itoa:
-    	mov rax, rsi    ; Mueve el número a convertir (en rsi) a rax
-    	mov rsi, 0      ; Inicializa rsi como 0 (contador de posición en la cadena)
-    	mov r10, rbx    ; Usa rbx como la base del número a convertir
+    	mov rax, rsi    				; Mueve el número a convertir (en rsi) a rax
+    	mov rsi, 0      				; Inicializa rsi como 0 (contador de posición en la cadena)
+    	mov r10, rbx   					; Usa rbx como la base del número a convertir
 
 .loop:
-	xor rdx, rdx       ; Limpia rdx para la división
-    	div r10            ; Divide rax por rbx
+	xor rdx, rdx       				; Limpia rdx para la división
+    	div r10            				; Divide rax por rbx
     	cmp rbx, 10
     	jbe .lower_base_digits ; Salta si la base es menor o igual a 10
     
@@ -390,6 +378,15 @@ _printItoa:
     	syscall
     	
 	ret
+
+_overflowDetected:			;check de overflow
+	mov rax, 1
+	mov rdi, 1
+	mov rsi, overflowMsg
+	mov rdx, 16
+	syscall
+	jmp _continueProcess
+
 
 ;---------------- END PRINTS --------------------
 ;-------------------- Finalizacion de codigo 
