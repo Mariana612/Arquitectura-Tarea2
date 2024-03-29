@@ -14,6 +14,8 @@ section .data
 	sumPrint db "Print de sumas:", 0xA ;len 15
 	restPrint db "Print de restas:", 0xA ;len 15
 	overflowMsg db "ERROR: Overflow", 0xA
+	compare_num dq "18446744073709551615"
+	compare_numTest dq "857565"
 
 section .bss
 	num1 resq 13
@@ -29,16 +31,16 @@ section .text
 
 ;------------------ MAIN ------------------------
 _start:
-	call _printText1	;Hace print inicial
-	call _getText		;Consigue el texto del usuario
+	call _printText1		;Hace print inicial
+	call _getText			;Consigue el texto del usuario
 
 
 	mov qword [num2], rax		;carga el primer numero en num2
-	xor rax, rax		;reinicia rax
-	mov byte[num1], 0	;reinicia num1
+	xor rax, rax			;reinicia rax
+	mov byte[num1], 0		;reinicia num1
 	
-	call _printText1	;Hace print inicial
-	call _getText		;Consigue el texto del usuario
+	call _printText1		;Hace print inicial
+	call _getText			;Consigue el texto del usuario
 
 		
 	mov qword [num3], rax		;carga el primer numero en num3
@@ -48,25 +50,24 @@ _start:
 	;#SUMA
 	call _printSum
 	mov rax, [num2]
-    	add rax, [num3]   ; Hace la suma
-	jc _overflowDetected
-	mov [processNum], rax
+    	add rax, [num3]			;Hace la suma
+	jc _overflowDetected		;check de overflow
+	mov [processNum], rax		;inicio itoa suma
 	call _processLoop
 
-	_continueProcess
+	_continueProcess:
 
 	;#RESTA
 	call _printRest
-	mov qword [counterSumNum],2
+	mov qword [counterSumNum],2	;reinicia el contador del loop
+	call _specialCaseSub		;realiza chequeo de casos especiales (numeros de len 20)
 
-	call _specialCaseSub
-
-	mov rax, [num2]
-    	sub rax, [num3]
-	call _compare
+	mov rax, [num2]			
+    	sub rax, [num3]			;realiza resta
+	call _compare			;compara si el resultado es caso especial o no		
 	
 
-	mov [processNum], rax
+	mov [processNum], rax		;inicio itoa resta
 	call _processLoop
 	;------------------FIN ITOA---------------------------
 
@@ -216,60 +217,41 @@ length_loop:
     jmp length_loop                ; Continue looping
 
 length_done:
-	cmp rax, 22
-	je _finishError
+	cmp rax, 21
+	jg _finishError
+	cmp rax, 21
+	je _startNumCheck
 	ret
 
 ;---#CALCULA SI EL NUMERO ES MENOR O IGUAL A 18446744073709551615
 _startNumCheck:
-    mov rsi, num1                   ; Address of num1
-    mov rdi, compare_num            ; Address of compare_num
-    
+  ; Initialize pointers to the end of strings
+    mov rsi, num1 + 19		;Point to the last character of num1 (assuming 13 qwords)
+    mov rdi, compare_num +19	;Point to the last character of compare_num (19 characters)
+
 compare_loop:
     ; Load current characters from both strings
-    mov al, byte [rsi]              ; Load character from num1
-    mov bl, byte [rdi]              ; Load character from compare_num
+    movzx rax, byte [rsi]             ; Load character from num1
+    movzx rbx, byte [rdi]             ; Load character from compare_num
     
     ; Compare characters
-    cmp al, bl                      ; Compare characters
-    jg num1_greater                 ; If num1's current digit is greater, jump
-    jl num1_less                    ; If num1's current digit is less, jump
-    ; If characters are equal, continue comparing next digits
-    ; If end of strings reached simultaneously, they are equal
+    cmp rax, rbx               ; Compare characters
+    jg _finishError            ; If num1's current digit is greater, jump
+    jl end_of_strings          ; If num1's current digit is less, jump
     
-    ; Move to next digits
-    inc rsi                         ; Move to next character of num1
-    inc rdi                         ; Move to next character of compare_num
     
-    ; Check for end of strings
-    cmp byte [rsi], 0               ; Check if end of num1
-    je end_of_strings               ; If end of num1, exit loop
-    cmp byte [rdi], 0               ; Check if end of compare_num
-    je end_of_strings               ; If end of compare_num, exit loop
+    ; Move to previous digits
+    sub rsi, 1                 ; Move to previous character of num1 (8 bytes for qword)
+    sub rdi, 1                 ; Move to previous character of compare_num (8 bytes for qword)
+    
+    ; Check for beginning of strings
+    cmp rsi, -1              ; Check if beginning of num1 reached
+    jl end_of_strings          ; If beginning of num1 reached, exit loop
     
     ; Continue loop
     jmp compare_loop
-
-num1_greater:
-    ; Code if num1 is greater than compare_num goes here
-    ; For example:
-    ; mov rsi, num1_message          ; Address of message
-    ; call print_string              ; Function to print the message
-    jmp exit_program                ; Exit the program
-
-num1_less:
-    ; Code if num1 is less than compare_num goes here
-    ; For example:
-    ; mov rsi, compare_num_message   ; Address of message
-    ; call print_string              ; Function to print the message
-    jmp exit_program                ; Exit the program
-
-end_of_strings:
-    ; If both strings end simultaneously, they are equal
-    ; Code for handling equality goes here
-    ; For example:
-    ; mov rsi, equal_message         ; Address of message
-    ; call print_string              ; Function to print the message
+    end_of_strings:
+    ret
 
 ;--------------END CHEQUEO DE ERRORES------------------------
 
