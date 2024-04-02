@@ -42,7 +42,7 @@ _start:
 	xor rax, rax			;reinicia rax
 	mov byte[num1], 0		;reinicia num1
 	
-	call _printText1		;Hace print inicial
+	;call _printText1		;Hace print inicial
 	call _getText			;Consigue el texto del usuario
 
 		
@@ -78,6 +78,52 @@ _start:
 
 ;-------------- FIN MAIN ------------------------
 
+_countString:
+
+	xor rcx, rcx
+
+size:
+	inc rcx
+	cmp byte[text1+rcx], 0
+jne size
+
+	dec rcx
+
+	xor rax, rax
+	mov rax, rcx
+	xor r9, r9
+
+PushLoop:
+	cmp rax, 0 
+	je EndPushLoop
+	xor rdx, rdx
+	mov rbx, 10
+	div rbx
+	add rdx, 48
+	push rdx
+	inc r9		;realiza un incremento de 1 tras leer un caracter
+	jmp PushLoop
+
+EndPushLoop:
+		;FInaliza el push al no tener mas caracteres que leer
+PopLoop:
+	pop rdx
+	xor rax, rax
+	mov rax, rdx
+	mov byte[text1], al
+
+	mov rax, 1
+	mov rdi, 1
+	mov rsi, text1
+	mov rdx, 1
+	syscall
+	dec r9
+	cmp r9, 0
+jne PopLoop
+
+	mov rax, 60
+	mov rdi, 0
+	syscall
 
 _compare: 
 	cmp byte [flagSpCase], 1
@@ -333,14 +379,15 @@ itoa:
 
 ;----------------- PRINTS ---------------------
 _GenericPrint:
-	lea rbx, [text1]
-	mov rax, rbx
-	call _lengthCheck
+        lea rbx, [text1]
+        mov rax, rbx
 
-	mov rax, 1
-	mov rdi, 1
+	call _countString
+
+        mov rax, 1
+        mov rdi, 1
 	mov rsi, rbx
-	mov rdx, [strLen] 
+	mov rdx, [r9] 
 	syscall 
 	ret
 	
