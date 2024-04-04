@@ -3,19 +3,21 @@
 global _start
 
 section .data
-	text1 db "Ingrese un numero", 0xA ;len 18
+	text1 db "Ingrese un numero", 0xA, 0 ;len 18
 	digitos db '0123456789ABCDEF'     ; Caracteres que representan los dígitos en base 16
-	errorCode db "Error: Ingrese un numero valido", 0xA;
+	errorCode db "Error: Ingrese un numero valido", 0xA, 0;
 	processNum dq 0
 	counterSumNum dq 2
 	flag1 db 0
 	flagSpCase db 0
 	negSign db "-" ;len 2
-	sumPrint db "Print de sumas:", 0xA ;len 15
-	restPrint db "Print de restas:", 0xA ;len 15
-	overflowMsg db "ERROR: Overflow", 0xA
+	sumPrint db "Print de sumas:", 0xA, 0;len 15
+	restPrint db "Print de restas:", 0xA, 0;len 15
+	overflowMsg db "ERROR: Overflow", 0xA, 0
 	compare_num dq "18446744073709551615"
 	compare_numTest dq "857565"
+	SYS_WRITE equ 1
+        STDOUT equ 1
 
 section .bss
 	num1 resq 13
@@ -325,13 +327,32 @@ itoa:
 
 ;----------------- END ITOA -------------------
 
+;-----------------Print Generico---------------
+
+_print:
+	mov rdx, 0     ; Cambiar de rbx a rdx para almacenar la longitud
+	push rax
+
+printLoop:
+	mov cl, [rax]
+	cmp cl, 0
+	je endPrintLoop
+	inc rdx        ; Incrementar rdx en lugar de rbx
+	inc rax
+	jmp printLoop
+
+endPrintLoop:
+	mov rax, SYS_WRITE
+	mov rdi, STDOUT
+	pop rsi
+	syscall
+
+	ret
 ;----------------- PRINTS ---------------------
 _printText1:			;texto inicial
-	mov rax, 1
-	mov rdi, 1
-	mov rsi, text1
+	mov rax, text1
 	mov rdx, 18
-	syscall 
+	call _print
 	ret
 
 _getText:			;obtiene el texto
@@ -354,37 +375,29 @@ _printNeg:
 	jmp _continueLoop
 
 _printSum:
-	mov rax, 1
-	mov rdi, 1
-	mov rsi, sumPrint
-	mov rdx, 16 ; 
-	syscall
+	mov rax, sumPrint
+	mov rdx, 16 
+	call _print
 	ret
 
 _printRest:
-	mov rax, 1
-	mov rdi, 1
-	mov rsi, restPrint
+	mov rax, restPrint
 	mov rdx, 17 ; 
-	syscall
+	call _print
 	ret
 
 _printItoa:
    	; Escribe en stdout
-   	mov rdi, 1
-    	mov rsi, buffer
+    	mov rax, buffer
     	mov rdx, r8
-    	mov rax, 1
-    	syscall
+    	call _print
     	
 	ret
 
 _overflowDetected:			;check de overflow
-	mov rax, 1
-	mov rdi, 1
-	mov rsi, overflowMsg
+	mov rax, overflowMsg
 	mov rdx, 16
-	syscall
+	call _print
 	jmp _continueProcess
 
 
@@ -392,10 +405,9 @@ _overflowDetected:			;check de overflow
 ;-------------------- Finalizacion de codigo 
 
 _finishError:			;finaliza codigo
-	mov rax, 1
-	mov rdi, 1
-	mov rsi, errorCode
+	mov rax, errorCode
 	mov rdx, 32
+	call _print
 	syscall 
 
 _finishCode:			;finaliza codigo
