@@ -33,15 +33,20 @@ section .text
 
 ;------------------ MAIN ------------------------
 _start:
-	call _printText1		;Hace print inicial
+	
+	mov rax, text1
+	call _print 			;Hace print inicial
+
 	call _getText			;Consigue el texto del usuario
 
 
 	mov qword [num2], rax		;carga el primer numero en num2
 	xor rax, rax			;reinicia rax
 	mov byte[num1], 0		;reinicia num1
-	
-	call _printText1		;Hace print inicial
+
+	mov rax, text1
+	call _print 			;Hace print inicial
+
 	call _getText			;Consigue el texto del usuario
 
 		
@@ -50,7 +55,9 @@ _start:
 	;------------------INICIO ITOA------------------------
 
 	;#SUMA
-	call _printSum
+	mov rax, sumPrint
+	call _print			;print suma
+	
 	mov rax, [num2]
     	add rax, [num3]			;Hace la suma
 	jc _overflowDetected		;check de overflow
@@ -60,7 +67,9 @@ _start:
 	_continueProcess:
 
 	;#RESTA
-	call _printRest
+	mov rax, restPrint 
+	call _print			;print suma
+
 	mov qword [counterSumNum],2	;reinicia el contador del loop
 	call _specialCaseSub		;realiza chequeo de casos especiales (numeros de len 20)
 
@@ -275,7 +284,8 @@ _startItoa:
     	; Termina la cadena con null
    	 mov byte [buffer + r8], 0
 
-   	jmp _printItoa
+   	mov rax, buffer
+    	jmp _print
 
 ; Definición de la función ITOA
 itoa:
@@ -349,11 +359,6 @@ endPrintLoop:
 
 	ret
 ;----------------- PRINTS ---------------------
-_printText1:			;texto inicial
-	mov rax, text1
-	mov rdx, 18
-	call _print
-	ret
 
 _getText:			;obtiene el texto
 	mov rax, 0
@@ -374,29 +379,9 @@ _printNeg:
 	syscall
 	jmp _continueLoop
 
-_printSum:
-	mov rax, sumPrint
-	mov rdx, 16 
-	call _print
-	ret
-
-_printRest:
-	mov rax, restPrint
-	mov rdx, 17 ; 
-	call _print
-	ret
-
-_printItoa:
-   	; Escribe en stdout
-    	mov rax, buffer
-    	mov rdx, r8
-    	call _print
-    	
-	ret
 
 _overflowDetected:			;check de overflow
 	mov rax, overflowMsg
-	mov rdx, 16
 	call _print
 	jmp _continueProcess
 
