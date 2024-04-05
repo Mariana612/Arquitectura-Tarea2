@@ -15,6 +15,7 @@ section .data
 	restPrint db "Print de restas:", 0xA, 0;len 15
 	overflowMsg db "ERROR: Overflow", 0xA, 0
 	compare_num dq "18446744073709551615"
+	printCont dq 0
 	
 
 section .bss
@@ -335,20 +336,21 @@ itoa:
 ;-----------------Print Generico---------------
 
 _genericprint:
-	mov rdx, 0		;coloca rdx en 0 (contador)
+	mov qword [printCont], 0		;coloca rdx en 0 (contador)
 	push rax		;almacenamos lo que esta en rax
 
 _printLoop:
 	mov cl, [rax]
 	cmp cl, 0
 	je _endPrint
-	inc rdx        		;aumenta contador
+	inc qword [printCont]        		;aumenta contador
 	inc rax
 	jmp _printLoop
 
 _endPrint:
 	mov rax, 1
 	mov rdi, 1
+	mov rdx,[printCont]
 	pop rsi			;texto
 	syscall
 	ret
