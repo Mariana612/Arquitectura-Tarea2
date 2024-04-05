@@ -8,7 +8,7 @@
 # Important Notice: To be used for GAS only
 #*************************************************
 #change the name "ejemplo" for the name of your source file
-name=T3-2GAS
+name=T3-1GAS
 #program to use as the assembler (you could use NASM or YASM for this makefile)
 ASM=as
 #flags for the assember
