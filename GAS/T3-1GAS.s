@@ -268,8 +268,8 @@ _startItoa:
     # Termina la cadena con null
     movb $0, (%rdi, %r8)
     
-    movq $buffer, %rax
-    jmp _genericprint
+    #movq $buffer, %rax
+    jmp _printItoa
     
 # Definición de la función ITOA
 
@@ -365,7 +365,13 @@ _printNeg:
     syscall
     jmp _continueLoop
 
-
+_printItoa:         # Escribe en stdout    
+movq $1, %rdi    
+leaq buffer(%rip), %rsi    
+movq %r8, %rdx    
+movq $1, %rax    
+syscall        
+ret
     
 _printNewLine:
     movq $1, %rdi
