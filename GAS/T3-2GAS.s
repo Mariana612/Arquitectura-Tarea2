@@ -37,20 +37,26 @@
 	buffer: .skip 101
 	
 	newline: .asciz "\n"  # Define un carácter de nueva línea
+	
+	SYS_WRITE = 1
+	STDOUT = 1
 
 .section .text
 
 .global _start
 
 _start:
-    call _printText1      # Hace print inicial
+    movq $text1, %rax
+    call _print     
     call _getText         # Consigue el texto del usuario
 
     movq %rax, num2       # carga el primer numero en num2
     xorq %rax, %rax       # reinicia rax
     movb $0, num1         # reinicia num1
 
-    call _printText1      # Hace print inicial
+    movq $text1, %rax
+    call _print  
+        
     call _getText         # Consigue el texto del usuario
 
     movq %rax, num3       # carga el primer numero en num3
@@ -58,7 +64,8 @@ _start:
     # ------------------ INICIO ITOA ------------------------
 
     # SUMA
-    call _printSum
+    movq $sumPrint, %rax
+    call _print
     movq num2(%rip), %rax
     addq num3(%rip), %rax      # Hace la suma
     jc _overflowDetected       # check de overflow
@@ -67,7 +74,8 @@ _start:
 
 _continueProcess:
     # RESTA
-    call _printRest
+    movq $restPrint, %rax
+    call _print
     movq $2, counterSumNum(%rip)   # reinicia el contador del loop
     call _specialCaseSub       # realiza chequeo de casos especiales (numeros de len 20)
     movq num2(%rip), %rax
@@ -254,10 +262,12 @@ _startItoa:
     movq %rax, %r8                        # Almacena la longitud de la cadena
 
     # Añade un salto de línea
-    movb $10, buffer(%rax, %r8)
+    movb $'\n', buffer(%rax, %r8)
 
     # Termina la cadena con null
     movb $0, (%rdi, %r8)
+    
+    
 
     jmp _printItoa
 
@@ -313,15 +323,29 @@ itoa:
 
 # -------------- END ITOA -------------------
 
-# -------------- PRINTS ---------------------
+#---------------PRINT GENERICO---------------
 
-_printText1:                           # texto inicial
-    movq $1, %rax
-    movq $1, %rdi
-    leaq text1(%rip), %rsi
-    movq $18, %rdx
-    syscall
-    ret
+_print:
+	movq $0, %rdx
+	pushq %rax
+
+printLoop:
+	movb (%rax), %cl
+	cmpb $0, %cl
+	je endPrintLoop
+	incq %rdx
+	incq %rax
+	jmp printLoop
+
+endPrintLoop:
+	movq $SYS_WRITE, %rax
+	movq $STDOUT, %rdi
+	popq %rsi
+	syscall
+
+	ret
+
+# -------------- PRINTS ---------------------
 
 _getText:                              # obtiene el texto
     movq $0, %rax
@@ -342,21 +366,7 @@ _printNeg:
     syscall
     jmp _continueLoop
 
-_printSum:
-    movq $1, %rax
-    movq $1, %rdi
-    leaq sumPrint(%rip), %rsi
-    movq $16, %rdx
-    syscall
-    ret
 
-_printRest:
-    movq $1, %rax
-    movq $1, %rdi
-    leaq restPrint(%rip), %rsi
-    movq $17, %rdx
-    syscall
-    ret
 
 _printItoa:
     
@@ -366,9 +376,6 @@ _printItoa:
     movq %r8, %rdx
     movq $1, %rax
     syscall
-
-    # Imprime una nueva línea
-    call _printNewLine
     
     ret
     
