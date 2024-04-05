@@ -47,7 +47,7 @@
 
 _start:
     movq $text1, %rax
-    call _print     
+    call _genericprint     
     call _getText         # Consigue el texto del usuario
 
     movq %rax, num2       # carga el primer numero en num2
@@ -55,7 +55,7 @@ _start:
     movb $0, num1         # reinicia num1
 
     movq $text1, %rax
-    call _print  
+    call _genericprint  
         
     call _getText         # Consigue el texto del usuario
 
@@ -65,7 +65,7 @@ _start:
 
     # SUMA
     movq $sumPrint, %rax
-    call _print
+    call _genericprint
     movq num2(%rip), %rax
     addq num3(%rip), %rax      # Hace la suma
     jc _overflowDetected       # check de overflow
@@ -75,7 +75,7 @@ _start:
 _continueProcess:
     # RESTA
     movq $restPrint, %rax
-    call _print
+    call _genericprint
     movq $2, counterSumNum(%rip)   # reinicia el contador del loop
     call _specialCaseSub       # realiza chequeo de casos especiales (numeros de len 20)
     movq num2(%rip), %rax
@@ -250,6 +250,7 @@ _continueLoop:
     movq counterSumNum(%rip), %rbx       # Asigna la base dinámicamente
     call _startItoa
     incq counterSumNum(%rip)
+    call _printNewLine
     jmp _processLoop
 
 # ITOA INICIO
@@ -267,10 +268,9 @@ _startItoa:
     # Termina la cadena con null
     movb $0, (%rdi, %r8)
     
+    movq $buffer, %rax
+    jmp _genericprint
     
-
-    jmp _printItoa
-
 # Definición de la función ITOA
 
 itoa:
@@ -325,19 +325,19 @@ itoa:
 
 #---------------PRINT GENERICO---------------
 
-_print:
+_genericprint:
 	movq $0, %rdx
 	pushq %rax
 
-printLoop:
+_printLoop:
 	movb (%rax), %cl
 	cmpb $0, %cl
-	je endPrintLoop
+	je _endPrint
 	incq %rdx
 	incq %rax
-	jmp printLoop
+	jmp _printLoop
 
-endPrintLoop:
+_endPrint:
 	movq $SYS_WRITE, %rax
 	movq $STDOUT, %rdi
 	popq %rsi
@@ -367,17 +367,6 @@ _printNeg:
     jmp _continueLoop
 
 
-
-_printItoa:
-    
-     # Escribe en stdout
-    movq $1, %rdi
-    leaq buffer(%rip), %rsi
-    movq %r8, %rdx
-    movq $1, %rax
-    syscall
-    
-    ret
     
 _printNewLine:
     movq $1, %rdi
@@ -395,12 +384,9 @@ _overflowDetected:                   # check de overflow
     syscall
     jmp _continueProcess
 
-_finishError:                       # finaliza codigo
-    movq $1, %rax
-    movq $1, %rdi
-    leaq errorCode(%rip), %rsi
-    movq $32, %rdx
-    syscall
+_finishError:           # finaliza codigo
+    movq $errorCode, %rdi  # Carga la dirección de la cadena errorCode en el registro de destino (rdi)
+    call _genericprint     # Llama a la función _genericprint
 
 _finishCode:                        # finaliza codigo
     movq $60, %rax
