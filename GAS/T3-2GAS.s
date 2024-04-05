@@ -38,8 +38,8 @@
 	
 	newline: .asciz "\n"  # Define un carácter de nueva línea
 	
-	SYS_WRITE = 1
-	STDOUT = 1
+	printCont:
+        	.quad 0
 
 .section .text
 
@@ -326,25 +326,24 @@ itoa:
 #---------------PRINT GENERICO---------------
 
 _genericprint:
-	movq $0, %rdx
-	pushq %rax
+    movq $0, printCont          # coloca printCont en 0 (contador)
+    pushq %rax                  # almacenamos lo que está en rax
 
 _printLoop:
-	movb (%rax), %cl
-	cmpb $0, %cl
-	je _endPrint
-	incq %rdx
-	incq %rax
-	jmp _printLoop
+    movb (%rax), %cl
+    cmpb $0, %cl
+    je _endPrint
+    incq printCont              # aumenta contador
+    incq %rax
+    jmp _printLoop
 
 _endPrint:
-	movq $SYS_WRITE, %rax
-	movq $STDOUT, %rdi
-	popq %rsi
-	syscall
-
-	ret
-
+    movq $1, %rax
+    movq $1, %rdi
+    movq printCont, %rdx
+    popq %rsi                   
+    syscall
+    ret
 # -------------- PRINTS ---------------------
 
 _getText:                              # obtiene el texto
