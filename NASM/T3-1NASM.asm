@@ -15,9 +15,8 @@ section .data
 	restPrint db "Print de restas:", 0xA, 0;len 15
 	overflowMsg db "ERROR: Overflow", 0xA, 0
 	compare_num dq "18446744073709551615"
-	compare_numTest dq "857565"
-	SYS_WRITE equ 1
-        STDOUT equ 1
+	printCont dq 0
+	
 
 section .bss
 	num1 resq 13
@@ -34,7 +33,7 @@ section .text
 ;------------------ MAIN ------------------------
 _start:
 	mov rax, text1
-	call _print
+	call _genericprint
 	
 	call _getText			;Consigue el texto del usuario
 
@@ -44,7 +43,7 @@ _start:
 	mov byte[num1], 0		;reinicia num1
 	
 	mov rax, text1   		;Hace print inicial
-	call _print
+	call _genericprint
 	
 	call _getText			;Consigue el texto del usuario
 
@@ -55,7 +54,7 @@ _start:
 
 	;#SUMA
 	mov rax, sumPrint
-	call _print
+	call _genericprint
 	mov rax, [num2]
     	add rax, [num3]			;Hace la suma
 	jc _overflowDetected		;check de overflow
@@ -66,7 +65,7 @@ _start:
 
 	;#RESTA
 	mov rax, restPrint
-	call _print
+	call _genericprint
 	mov qword [counterSumNum],2	;reinicia el contador del loop
 	call _specialCaseSub		;realiza chequeo de casos especiales (numeros de len 20)
 
@@ -282,7 +281,7 @@ _startItoa:
    	 mov byte [buffer + r8], 0
 
    	mov rax , buffer
-   	jmp _print
+   	jmp _genericprint
 
 ; Definición de la función ITOA
 itoa:
@@ -336,24 +335,24 @@ itoa:
 
 ;-----------------Print Generico---------------
 
-_print:
-	mov rdx, 0     
-	push rax
+_genericprint:
+	mov qword [printCont], 0		;coloca rdx en 0 (contador)
+	push rax		;almacenamos lo que esta en rax
 
-printLoop:
+_printLoop:
 	mov cl, [rax]
 	cmp cl, 0
-	je endPrintLoop
-	inc rdx        
+	je _endPrint
+	inc qword [printCont]        		;aumenta contador
 	inc rax
-	jmp printLoop
+	jmp _printLoop
 
-endPrintLoop:
-	mov rax, SYS_WRITE
-	mov rdi, STDOUT
-	pop rsi
+_endPrint:
+	mov rax, 1
+	mov rdi, 1
+	mov rdx,[printCont]
+	pop rsi			;texto
 	syscall
-
 	ret
 
 ;----------------- PRINTS ---------------------
@@ -381,7 +380,7 @@ _printNeg:
 _overflowDetected:			;check de overflow
 	mov rax, overflowMsg
 	mov rdx, 16
-	call _print
+	call _genericprint
 	jmp _continueProcess
 
 
@@ -390,9 +389,7 @@ _overflowDetected:			;check de overflow
 
 _finishError:			;finaliza codigo
 	mov rax, errorCode
-	mov rdx, 32
-	call _print
-	syscall 
+	call _genericprint
 
 _finishCode:			;finaliza codigo
 	mov rax, 60
