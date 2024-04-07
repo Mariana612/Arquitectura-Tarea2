@@ -3,30 +3,27 @@
 global _start
 
 section .data
-	text1 db "Ingrese un numero", 0xA, 0 ;len 18
-	digitos db '0123456789ABCDEF'     ; Caracteres que representan los dígitos en base 16
-	errorCode db "Error: Ingrese un numero valido", 0xA, 0;
-	processNum dq 0
-	counterSumNum dq 2
-	flag1 db 0
-	flagSpCase db 0
-	negSign db "-" ;len 2
-	sumPrint db "Print de sumas:", 0xA, 0;len 15
-	restPrint db "Print de restas:", 0xA, 0;len 15
+	text1 db "Ingrese un numero", 0xA, 0 					
+	digitos db '0123456789ABCDEF'     						;Caracteres que representan los dígitos en base 16
+	errorCode db "Error: Ingrese un numero valido", 0xA, 0
+	itoaNum dq 0											;numero para procesar en itoa (resultados de suma y resta)
+	numBase dq 2											;numero utilizado para la base del itoa
+	flagNegativo db 0										;flag que indica que el numero es negativo
+	flagSpCase db 0											;flag del caso especial de la resta
+	negSign db "-" 
+	sumPrint db "Print de sumas:", 0xA, 0
+	restPrint db "Print de restas:", 0xA, 0
 	overflowMsg db "ERROR: Overflow", 0xA, 0
-	compare_num dq "18446744073709551615"
+	compare_num dq "18446744073709551615"					;indica el numero maximo a ingresar
 	printCont dq 0
 	
 
 section .bss
+	numString resq 13
 	num1 resq 13
 	num2 resq 13
-	num3 resq 13
 	length resb 1
-
-
-	buffer     resb 101   ; Buffer para almacenar la cadena de caracteres convertida
-	base resq 8;
+	buffer     resb 101   									;Buffer para almacenar la cadena de caracteres convertida
 
 section .text
 
@@ -38,9 +35,9 @@ _start:
 	call _getText			;Consigue el texto del usuario
 
 
-	mov qword [num2], rax		;carga el primer numero en num2
+	mov qword [num1], rax		;carga el primer numero en num1
 	xor rax, rax			;reinicia rax
-	mov byte[num1], 0		;reinicia num1
+	mov byte[numString], 0		;reinicia numString
 	
 	mov rax, text1   		;Hace print inicial
 	call _genericprint
@@ -48,17 +45,17 @@ _start:
 	call _getText			;Consigue el texto del usuario
 
 		
-	mov qword [num3], rax		;carga el primer numero en num3
+	mov qword [num2], rax		;carga el primer numero en num2
 
 	;------------------INICIO ITOA------------------------
 
 	;#SUMA
 	mov rax, sumPrint
 	call _genericprint
-	mov rax, [num2]
-    	add rax, [num3]			;Hace la suma
+	mov rax, [num1]
+    	add rax, [num2]			;Hace la suma
 	jc _overflowDetected		;check de overflow
-	mov [processNum], rax		;inicio itoa suma
+	mov [itoaNum], rax		;inicio itoa suma
 	call _processLoop
 
 	_continueProcess:
@@ -66,15 +63,15 @@ _start:
 	;#RESTA
 	mov rax, restPrint
 	call _genericprint
-	mov qword [counterSumNum],2	;reinicia el contador del loop
+	mov qword [numBase],2	;reinicia el contador del loop
 	call _specialCaseSub		;realiza chequeo de casos especiales (numeros de len 20)
 
-	mov rax, [num2]			
-    	sub rax, [num3]			;realiza resta
+	mov rax, [num1]			
+    	sub rax, [num2]			;realiza resta
 	call _compare			;compara si el resultado es caso especial o no		
 	
 
-	mov [processNum], rax		;inicio itoa resta
+	mov [itoaNum], rax		;inicio itoa resta
 	call _processLoop
 	;------------------FIN ITOA---------------------------
 
@@ -100,14 +97,14 @@ _compare:
 
 	_makeNeg:
 		neg rax			;vuelve positivo el numero
-		mov byte[flag1], 1	;indica que el numero es negativo
+		mov byte[flagNegativo], 1	;indica que el numero es negativo
 		ret
 
 ;------------------ATOI---------------------------------------
 _AtoiStart:
 	xor rbx, rbx			;reinicia el registro
 	xor rax, rax			;reinicia el registro
-	lea rcx, [num1]			;ingresa el num1 a rcx
+	lea rcx, [numString]			;ingresa el numString a rcx
 	jmp _Atoi
 
 _Atoi:
@@ -133,7 +130,7 @@ _exitFunction:
 ;---#chequea que el caracter ingresado sea un int
 _inputCheck:  			
 				
-	mov rsi, num1					;direccion del buffer de ingreso
+	mov rsi, numString					;direccion del buffer de ingreso
     	xor rcx, rcx					;Clear counter
 
 	check_input:
@@ -157,14 +154,14 @@ _inputCheck:
 
 _specialCaseSub: 
 
-	mov rax, [num2]
+	mov rax, [num1]
 	call _countInt					;calcula lngitud de numero2
 	;---------------
 
 	cmp byte [length], 20				;compara que el tamano es 20
 	je _num20
 	
-	mov rax, [num3]
+	mov rax, [num2]
 	call _countInt
 
 	cmp byte [length], 20
@@ -176,7 +173,7 @@ _specialCaseSub:
 
 	
 	_num20:						;calcula lngitud de numero3
-		mov rax, [num3]
+		mov rax, [num2]
 		call _countInt
 
 		cmp byte [length], 20
@@ -206,7 +203,7 @@ divide_loop:
 	
 _lengthCheck:
     	xor rax, rax                  			;Clear registro de rax
-    	mov rdi, num1               			;carga la direccion de memoria de num1 en rdi
+    	mov rdi, numString               			;carga la direccion de memoria de numString en rdi
     
 length_loop:
     	cmp byte [rdi + rax], 0      			;observa si tiene terminacion nula
@@ -224,16 +221,16 @@ length_done:
 ;---#CALCULA SI EL NUMERO ES MENOR O IGUAL A 18446744073709551615
 
 _startNumCheck:
-    	mov rsi, num1 + 19				;Apunta al ultimo caracter del numero ingresado (se asume que siempre son 20 caracteres)
+    	mov rsi, numString + 19				;Apunta al ultimo caracter del numero ingresado (se asume que siempre son 20 caracteres)
     	mov rdi, compare_num +19			;Apunta al ultimo caracter del numero a comparar (se asume que siempre son 20 caracteres)
 
 compare_loop:
-    	movzx rax, byte [rsi]             		;Carga el caracter del num1
+    	movzx rax, byte [rsi]             		;Carga el caracter del numString
     	movzx rbx, byte [rdi]             		;Carga el caracter del compare_num
     
     	cmp rax, rbx               			;Compara los caracteres
-    	jg _finishError            			;Si el caracter del num1 es mayor, da error
-    	jl end_of_strings          			;Si el caracter del num1 es mayor, finaliza
+    	jg _finishError            			;Si el caracter del numString es mayor, da error
+    	jl end_of_strings          			;Si el caracter del numString es mayor, finaliza
     
     	sub rsi, 1                 			;Se aumenta al caracter que se esta apuntando
     	sub rdi, 1                 			;Se aumenta al caracter que se esta apuntando
@@ -253,14 +250,14 @@ end_of_strings:
 ;---#LOOP PARA REALIZAR ITOA
 
 _processLoop:
-	cmp qword [counterSumNum],17
+	cmp qword [numBase],17
 	je _exitFunction
-	cmp byte[flag1], 1				;se asegura de que el primer numero sea o no negativo
+	cmp byte[flagNegativo], 1				;se asegura de que el primer numero sea o no negativo
 	je _printNeg					;realiza print del simbolo negativo
 
 _continueLoop:
 	call _startItoa
-	inc qword [counterSumNum]
+	inc qword [numBase]
 	jmp _processLoop
 
 ;---#ITOA INICIO
@@ -268,8 +265,8 @@ _continueLoop:
 _startItoa:
     	;Llama a ITOA para convertir n a cadena
     	mov rdi, buffer
-    	mov rsi, [processNum]
-    	mov rbx, [counterSumNum]			;Establece la base (Se puede cambiar)
+    	mov rsi, [itoaNum]
+    	mov rbx, [numBase]			;Establece la base (Se puede cambiar)
     	call itoa
     	mov r8, rax  					;Almacena la longitud de la cadena
     
@@ -290,7 +287,7 @@ itoa:
     	mov r10, rbx   					; Usa rbx como la base del número a convertir
 
 .loop:
-	xor rdx, rdx       				; Limpia rdx para la división
+	xor rdx, rdx       					; Limpia rdx para la división
     	div r10            				; Divide rax por rbx
     	cmp rbx, 10
     	jbe .lower_base_digits ; Salta si la base es menor o igual a 10
@@ -360,7 +357,7 @@ _endPrint:
 _getText:			;obtiene el texto
 	mov rax, 0
 	mov rdi, 0
-	mov rsi, num1
+	mov rsi, numString
 	mov rdx, 101
 	syscall 
 	call _inputCheck	;se asegura de que se ingrese unicamente numeros
