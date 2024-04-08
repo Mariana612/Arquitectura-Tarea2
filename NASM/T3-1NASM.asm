@@ -19,9 +19,9 @@ section .data
 	
 
 section .bss
-	numString resq 13
-	num1 resq 13
-	num2 resq 13
+	numString resq 21
+	num1 resq 21
+	num2 resq 21
 	length resb 1
 	buffer     resb 101   									;Buffer para almacenar la cadena de caracteres convertida
 
@@ -53,8 +53,9 @@ _start:
 	mov rax, sumPrint
 	call _genericprint
 	mov rax, [num1]
-    	add rax, [num2]			;Hace la suma
+    add rax, [num2]			;Hace la suma
 	jc _overflowDetected		;check de overflow
+	
 	mov [itoaNum], rax		;inicio itoa suma
 	call _processLoop
 
@@ -115,6 +116,7 @@ _Atoi:
 	sub rbx,30h			;resta 30h al string para volverlo el numero
 	imul rax, 10 			;multiplica el numero almacenado en rax x 10 para volverlo decimal
 	add rax, rbx			;agrega el ultimo numero obtenido a rax (ej: 10+3=13)	
+	jc _overflowDetected
 
 
 	xor rbx,rbx			;reinicia el registro
@@ -215,33 +217,7 @@ length_done:
 	cmp rax, 21
 	jg _finishError					;error si es mas largo a 21
 	cmp rax, 21
-	je _startNumCheck				;continua
 	ret
-
-;---#CALCULA SI EL NUMERO ES MENOR O IGUAL A 18446744073709551615
-
-_startNumCheck:
-    	mov rsi, numString + 19				;Apunta al ultimo caracter del numero ingresado (se asume que siempre son 20 caracteres)
-    	mov rdi, compare_num +19			;Apunta al ultimo caracter del numero a comparar (se asume que siempre son 20 caracteres)
-
-compare_loop:
-    	movzx rax, byte [rsi]             		;Carga el caracter del numString
-    	movzx rbx, byte [rdi]             		;Carga el caracter del compare_num
-    
-    	cmp rax, rbx               			;Compara los caracteres
-    	jg _finishError            			;Si el caracter del numString es mayor, da error
-    	jl end_of_strings          			;Si el caracter del numString es mayor, finaliza
-    
-    	sub rsi, 1                 			;Se aumenta al caracter que se esta apuntando
-    	sub rdi, 1                 			;Se aumenta al caracter que se esta apuntando
-    
-    	cmp rsi, -1                			;Chequea si se finalizo de comparar
-    	jl end_of_strings          			;finaliza loop
-    
-    	jmp compare_loop	   			;loop
-
-end_of_strings:
-    	ret
 
 ;--------------END CHEQUEO DE ERRORES------------------------
 
@@ -378,7 +354,7 @@ _overflowDetected:			;check de overflow
 	mov rax, overflowMsg
 	mov rdx, 16
 	call _genericprint
-	jmp _continueProcess
+	jmp _finishCode
 
 
 ;---------------- END PRINTS --------------------
